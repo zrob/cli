@@ -68,22 +68,15 @@ func (cmd BuildpacksCommand) Execute(args []string) error {
 		return err
 	}
 
-	//implement the actor layer to call the api layer to sort by position?
-	//or do we need to sort here like with stacks?
-	//sort.Slice(buildpacks, func(i, j int) bool { return sorting.LessIgnoreCase(stacks[i].Name, stacks[j].Name) })
-
-	//Do we expect a no buildpack response to look like nil or an empty array of buildpacks?
-	//I'm assuming empty array for now
-
 	if len(buildpacks) == 0 {
 		cmd.UI.DisplayTextWithFlavor("No buildpacks found")
 	} else {
-		displayTable(buildpacks, cmd.UI)
+		cmd.displayTable(buildpacks)
 	}
 	return nil
 }
 
-func displayTable(buildpacks []v7action.BuildpackTemp, display command.UI) {
+func (cmd BuildpacksCommand) displayTable(buildpacks []v7action.BuildpackTemp) {
 	if len(buildpacks) > 0 {
 		var keyValueTable = [][]string{
 			{"position", "name", "stack", "enabled", "locked", "filename"},
@@ -92,6 +85,6 @@ func displayTable(buildpacks []v7action.BuildpackTemp, display command.UI) {
 			keyValueTable = append(keyValueTable, []string{strconv.Itoa(buildpack.Position), buildpack.Name, buildpack.Stack, strconv.FormatBool(buildpack.Enabled), strconv.FormatBool(buildpack.Locked), buildpack.Filename})
 		}
 
-		display.DisplayTableWithHeader("", keyValueTable, ui.DefaultTableSpacePadding)
+		cmd.UI.DisplayTableWithHeader("", keyValueTable, ui.DefaultTableSpacePadding)
 	}
 }
