@@ -1,6 +1,8 @@
 package v7
 
 import (
+	"strconv"
+
 	"code.cloudfoundry.org/cli/actor/sharedaction"
 	"code.cloudfoundry.org/cli/actor/v7action"
 	"code.cloudfoundry.org/cli/command"
@@ -10,7 +12,7 @@ import (
 //go:generate counterfeiter . BuildpacksActor
 
 type BuildpacksActor interface {
-	GetBuildpacks() ([]v7action.Buildpack, v7action.Warnings, error)
+	GetBuildpacks() ([]v7action.BuildpackTemp, v7action.Warnings, error)
 }
 
 type BuildpacksCommand struct {
@@ -60,26 +62,34 @@ func (cmd BuildpacksCommand) Execute(args []string) error {
 	})
 	cmd.UI.DisplayNewline()
 
-	_, warnings, err := cmd.Actor.GetBuildpacks()
+	buildpacks, warnings, err := cmd.Actor.GetBuildpacks()
 	cmd.UI.DisplayWarnings(warnings)
 	if err != nil {
 		return err
 	}
 
-	// sort.Slice(stacks, func(i, j int) bool { return sorting.LessIgnoreCase(stacks[i].Name, stacks[j].Name) })
+	//implement the actor layer to call the api layer to sort by position?
+	//or do we need to sort here like with stacks?
+	//sort.Slice(buildpacks, func(i, j int) bool { return sorting.LessIgnoreCase(stacks[i].Name, stacks[j].Name) })
 
-	// displayTable(stacks, cmd.UI)
+	//Do we expect a no buildpack response to look like nil or an empty array of buildpacks?
+	//I'm assuming empty array for now
 
+	if len(buildpacks) == 0 {
+		cmd.UI.DisplayTextWithFlavor("No buildpacks found")
+	} else {
+		displayTable(buildpacks, cmd.UI)
+	}
 	return nil
 }
 
-func displayTable(stacks []v7action.Stack, display command.UI) {
-	if len(stacks) > 0 {
+func displayTable(buildpacks []v7action.BuildpackTemp, display command.UI) {
+	if len(buildpacks) > 0 {
 		var keyValueTable = [][]string{
-			{"name", "description"},
+			{"position", "name", "stack", "enabled", "locked", "filename"},
 		}
-		for _, stack := range stacks {
-			keyValueTable = append(keyValueTable, []string{stack.Name, stack.Description})
+		for _, buildpack := range buildpacks {
+			keyValueTable = append(keyValueTable, []string{strconv.Itoa(buildpack.Position), buildpack.Name, buildpack.Stack, strconv.FormatBool(buildpack.Enabled), strconv.FormatBool(buildpack.Locked), buildpack.Filename})
 		}
 
 		display.DisplayTableWithHeader("", keyValueTable, ui.DefaultTableSpacePadding)

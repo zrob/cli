@@ -71,6 +71,7 @@ var _ = FDescribe("buildpacks Command", func() {
 		})
 
 		It("should print text indicating its runnning", func() {
+			Expect(executeErr).NotTo(HaveOccurred())
 			Expect(testUI.Out).To(Say(`Getting buildpacks as apple\.\.\.`))
 		})
 
@@ -89,29 +90,35 @@ var _ = FDescribe("buildpacks Command", func() {
 		})
 
 		When("getting buildpacks succeeds", func() {
-			BeforeEach(func() {
-				buildpacks = []v7action.Buildpack{
-					{},
-					{},
-				}
-				fakeActor.GetBuildpacksReturns(buildpacks, v7action.Warnings{"some-warning-1", "some-warning-2"}, nil)
+			When("buildpacks exist", func() {
+				BeforeEach(func() {
+					buildpacks := []v7action.BuildpackTemp{
+						{Name: "buildpack-1", Position: 1, Enabled: true, Locked: false, Filename: "buildpack-1.file", Stack: "buildpack-1-stack"},
+						{Name: "buildpack-2", Position: 2, Enabled: false, Locked: true, Filename: "buildpack-2.file", Stack: ""},
+					}
+					fakeActor.GetBuildpacksReturns(buildpacks, v7action.Warnings{"some-warning-1", "some-warning-2"}, nil)
+				})
+				It("prints a table of buildpacks", func() {
+					Expect(executeErr).NotTo(HaveOccurred())
+					Expect(testUI.Err).To(Say("some-warning-1"))
+					Expect(testUI.Err).To(Say("some-warning-2"))
+					Expect(testUI.Out).To(Say(`position\s+name\s+stack\s+enabled\s+locked\s+filename`))
+					Expect(testUI.Out).To(Say(`1\s+buildpack-1\s+buildpack-1-stack\s+true\s+false\s+buildpack-1.file`))
+					Expect(testUI.Out).To(Say(`2\s+buildpack-2\s+false\s+true\s+buildpack-2.file`))
+				})
+			})
+			When("there are no buildpacks", func() {
+				BeforeEach(func() {
+					buildpacks := []v7action.BuildpackTemp{}
+					fakeActor.GetBuildpacksReturns(buildpacks, v7action.Warnings{"some-warning-1", "some-warning-2"}, nil)
+				})
+				It("prints a table of buildpacks", func() {
+					Expect(executeErr).NotTo(HaveOccurred())
+					Expect(testUI.Err).To(Say("some-warning-1"))
+					Expect(testUI.Err).To(Say("some-warning-2"))
+					Expect(testUI.Out).To(Say("No buildpacks found"))
+				})
+			})
 		})
-		// 	When("BuildpacksActor returns an error", func() {
-		// 		var expectedErr error
-
-		// 		BeforeEach(func() {
-		// 			warnings := v7action.Warnings{"warning-1", "warning-2"}
-		// 			expectedErr = errors.New("some-error")
-		// 			fakeActor.GetBuildpacksReturns(nil, warnings, expectedErr)
-		// 		})
-
-		// 		It("prints that error with warnings", func() {
-		// 			Expect(executeErr).To(Equal(expectedErr))
-
-		// 			Expect(testUI.Err).To(Say("warning-1"))
-		// 			Expect(testUI.Err).To(Say("warning-2"))
-		// 			Expect(testUI.Out).ToNot(Say(tableHeaders))
-		// 		})
-		// 	})
 	})
 })
