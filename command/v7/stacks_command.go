@@ -78,7 +78,7 @@ func (cmd StacksCommand) Execute(args []string) error {
 	return nil
 }
 
-func displayTable(stacks []v7action.Stack, display command.UI) {
+func (StacksCommand) displayTable(stacks []v7action.Stack, display command.UI) {
 	if len(stacks) > 0 {
 		var keyValueTable = [][]string{
 			{"name", "description"},
