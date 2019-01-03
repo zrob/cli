@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega/gbytes"
 )
 
-var _ = FDescribe("buildpacks Command", func() {
+var _ = Describe("buildpacks Command", func() {
 	var (
 		cmd             BuildpacksCommand
 		testUI          *ui.UI
