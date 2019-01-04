@@ -92,7 +92,7 @@ var _ = Describe("buildpacks Command", func() {
 		When("getting buildpacks succeeds", func() {
 			When("buildpacks exist", func() {
 				BeforeEach(func() {
-					buildpacks := []v7action.BuildpackTemp{
+					buildpacks := []v7action.Buildpack{
 						{Name: "buildpack-1", Position: 1, Enabled: true, Locked: false, Filename: "buildpack-1.file", Stack: "buildpack-1-stack"},
 						{Name: "buildpack-2", Position: 2, Enabled: false, Locked: true, Filename: "buildpack-2.file", Stack: ""},
 					}
@@ -109,7 +109,7 @@ var _ = Describe("buildpacks Command", func() {
 			})
 			When("there are no buildpacks", func() {
 				BeforeEach(func() {
-					buildpacks := []v7action.BuildpackTemp{}
+					buildpacks := []v7action.Buildpack{}
 					fakeActor.GetBuildpacksReturns(buildpacks, v7action.Warnings{"some-warning-1", "some-warning-2"}, nil)
 				})
 				It("prints a table of buildpacks", func() {

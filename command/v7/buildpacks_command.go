@@ -6,13 +6,14 @@ import (
 	"code.cloudfoundry.org/cli/actor/sharedaction"
 	"code.cloudfoundry.org/cli/actor/v7action"
 	"code.cloudfoundry.org/cli/command"
+	"code.cloudfoundry.org/cli/command/v7/shared"
 	"code.cloudfoundry.org/cli/util/ui"
 )
 
 //go:generate counterfeiter . BuildpacksActor
 
 type BuildpacksActor interface {
-	GetBuildpacks() ([]v7action.BuildpackTemp, v7action.Warnings, error)
+	GetBuildpacks() ([]v7action.Buildpack, v7action.Warnings, error)
 }
 
 type BuildpacksCommand struct {
@@ -28,13 +29,14 @@ type BuildpacksCommand struct {
 func (cmd *BuildpacksCommand) Setup(config command.Config, ui command.UI) error {
 	cmd.UI = ui
 	cmd.Config = config
-	cmd.SharedActor = sharedaction.NewActor(config)
+	sharedActor := sharedaction.NewActor(config)
+	cmd.SharedActor = sharedActor
 
-	// ccClient, _, err := shared.NewClients(config, ui, true, "")
-	// if err != nil {
-	// 	return err
-	// }
-	// cmd.Actor = v7action.NewActor(ccClient, config, nil, nil)
+	ccClient, uaaClient, err := shared.NewClients(config, ui, true, "")
+	if err != nil {
+		return err
+	}
+	cmd.Actor = v7action.NewActor(ccClient, config, sharedActor, uaaClient)
 
 	return nil
 }
@@ -76,7 +78,7 @@ func (cmd BuildpacksCommand) Execute(args []string) error {
 	return nil
 }
 
-func (cmd BuildpacksCommand) displayTable(buildpacks []v7action.BuildpackTemp) {
+func (cmd BuildpacksCommand) displayTable(buildpacks []v7action.Buildpack) {
 	if len(buildpacks) > 0 {
 		var keyValueTable = [][]string{
 			{"position", "name", "stack", "enabled", "locked", "filename"},
