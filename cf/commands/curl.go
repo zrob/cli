@@ -17,6 +17,7 @@ import (
 	"code.cloudfoundry.org/cli/cf/api"
 	"code.cloudfoundry.org/cli/cf/commandregistry"
 	"code.cloudfoundry.org/cli/cf/configuration/coreconfig"
+	cfErrors "code.cloudfoundry.org/cli/cf/errors"
 	"code.cloudfoundry.org/cli/cf/requirements"
 	"code.cloudfoundry.org/cli/cf/terminal"
 	"code.cloudfoundry.org/cli/cf/trace"
@@ -107,9 +108,12 @@ func (cmd *Curl) Execute(c flags.FlagContext) error {
 
 	reqHeader := strings.Join(headers, "\n")
 
-	responseHeader, responseBody, apiErr := cmd.curlRepo.Request(method, path, reqHeader, body, c.Bool("fail"))
-	if apiErr != nil {
-		return errors.New(T("Error creating request:\n{{.Err}}", map[string]interface{}{"Err": apiErr.Error()}))
+	responseHeader, responseBody, err := cmd.curlRepo.Request(method, path, reqHeader, body, c.Bool("fail"))
+	if err != nil {
+		if httpErr, ok := err.(cfErrors.HTTPError); ok && c.Bool("fail") {
+			return errors.New(T("The requested URL returned error: {{.StatusCode}}", map[string]interface{}{"StatusCode": httpErr.StatusCode()}))
+		}
+		return errors.New(T("Error creating request:\n{{.Err}}", map[string]interface{}{"Err": err.Error()}))
 	}
 
 	if trace.LoggingToStdout && !cmd.pluginCall {

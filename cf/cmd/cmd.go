@@ -114,6 +114,7 @@ func Main(traceEnv string, args []string) {
 			err = req.Execute()
 			if err != nil {
 				deps.UI.Failed(err.Error())
+				// TODO: set to 22 if it's curl's magic failure
 				os.Exit(1)
 			}
 		}
