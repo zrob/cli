@@ -41,7 +41,7 @@ func (cmd *Curl) MetaData() commandregistry.CommandMetadata {
 	fs["H"] = &flags.StringSliceFlag{ShortName: "H", Usage: T("Custom headers to include in the request, flag can be specified multiple times")}
 	fs["d"] = &flags.StringFlag{ShortName: "d", Usage: T("HTTP data to include in the request body, or '@' followed by a file name to read the data from")}
 	fs["output"] = &flags.StringFlag{Name: "output", Usage: T("Write curl body to FILE instead of stdout")}
-	fs["fail"] = &flags.BoolFlag{Name: "fail", Usage: "foo"}
+	fs["fail"] = &flags.BoolFlag{ShortName: "f", Name: "fail", Usage: "foo"}
 
 	return commandregistry.CommandMetadata{
 		Name:        "curl",
@@ -111,7 +111,7 @@ func (cmd *Curl) Execute(c flags.FlagContext) error {
 	responseHeader, responseBody, err := cmd.curlRepo.Request(method, path, reqHeader, body, c.Bool("fail"))
 	if err != nil {
 		if httpErr, ok := err.(cfErrors.HTTPError); ok && c.Bool("fail") {
-			return errors.New(T("The requested URL returned error: {{.StatusCode}}", map[string]interface{}{"StatusCode": httpErr.StatusCode()}))
+			return cfErrors.NewCurlHTTPError(httpErr.StatusCode())
 		}
 		return errors.New(T("Error creating request:\n{{.Err}}", map[string]interface{}{"Err": err.Error()}))
 	}

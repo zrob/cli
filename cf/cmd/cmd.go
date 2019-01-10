@@ -14,6 +14,7 @@ import (
 	"code.cloudfoundry.org/cli/cf/configuration/confighelpers"
 	"code.cloudfoundry.org/cli/cf/configuration/coreconfig"
 	"code.cloudfoundry.org/cli/cf/configuration/pluginconfig"
+	"code.cloudfoundry.org/cli/cf/errors"
 	"code.cloudfoundry.org/cli/cf/flags"
 	. "code.cloudfoundry.org/cli/cf/i18n"
 	"code.cloudfoundry.org/cli/cf/net"
@@ -114,7 +115,6 @@ func Main(traceEnv string, args []string) {
 			err = req.Execute()
 			if err != nil {
 				deps.UI.Failed(err.Error())
-				// TODO: set to 22 if it's curl's magic failure
 				os.Exit(1)
 			}
 		}
@@ -122,6 +122,9 @@ func Main(traceEnv string, args []string) {
 		err = cmd.Execute(flagContext)
 		if err != nil {
 			deps.UI.Failed(err.Error())
+			if _, ok := err.(*errors.CurlHTTPError); ok {
+				os.Exit(22)
+			}
 			os.Exit(1)
 		}
 

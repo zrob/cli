@@ -527,7 +527,7 @@ var _ = Describe("curl command", func() {
 			})
 
 			When("the -f flag is passed", func() {
-				FIt("should exit 22", func() {
+				It("should exit 22", func() {
 					session := helpers.CF("curl", "/v2/garbage-endpoint", "-f")
 					Eventually(session).Should(Exit(22))
 				})
