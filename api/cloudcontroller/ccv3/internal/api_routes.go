@@ -11,6 +11,7 @@ import "net/http"
 const (
 	DeleteApplicationProcessInstanceRequest                     = "DeleteApplicationProcessInstance"
 	DeleteApplicationRequest                                    = "DeleteApplication"
+	DeleteBuildpackRequest                                      = "DeleteBuildpack"
 	DeleteIsolationSegmentRelationshipOrganizationRequest       = "DeleteIsolationSegmentRelationshipOrganization"
 	DeleteIsolationSegmentRequest                               = "DeleteIsolationSegment"
 	DeleteServiceInstanceRelationshipsSharedSpaceRequest        = "DeleteServiceInstanceRelationshipsSharedSpace"
@@ -84,6 +85,7 @@ var APIRoutes = []Route{
 	{Resource: AppsResource, Path: "/:app_guid/tasks", Method: http.MethodGet, Name: GetApplicationTasksRequest},
 	{Resource: AppsResource, Path: "/:app_guid/tasks", Method: http.MethodPost, Name: PostApplicationTasksRequest},
 	{Resource: BuildpacksResource, Path: "/", Method: http.MethodGet, Name: GetBuildpacksRequest},
+	{Resource: BuildpacksResource, Path: "/:buildpack_guid", Method: http.MethodDelete, Name: DeleteBuildpackRequest},
 	{Resource: BuildsResource, Path: "/", Method: http.MethodPost, Name: PostBuildRequest},
 	{Resource: BuildsResource, Path: "/:build_guid", Method: http.MethodGet, Name: GetBuildRequest},
 	{Resource: DeploymentsResource, Path: "/", Method: http.MethodGet, Name: GetDeploymentsRequest},
