@@ -13,10 +13,13 @@ type DeleteBuildpackActor interface {
 }
 
 type DeleteBuildpackCommand struct {
-	RequiredArgs    flag.BuildpackName `positional-args:"yes"`
-	//Force           bool               `short:"f" description:"Force deletion without confirmation"`
-	Stack           string             `short:"s" description:"Specify stack to disambiguate buildpacks with the same name. Required when buildpack name is ambiguous"`
+	RequiredArgs flag.BuildpackName `positional-args:"yes"`
+	// Force           bool               `short:"f" description:"Force deletion without confirmation"`
+	Stack string `short:"s" description:"Specify stack to disambiguate buildpacks with the same name. Required when buildpack name is ambiguous"`
 	Actor DeleteBuildpackActor
+	UI    command.UI
+	Config      command.Config
+	SharedActor command.SharedActor
 }
 
 func (cmd *DeleteBuildpackCommand) Setup(config command.Config, ui command.UI) error {
@@ -24,7 +27,28 @@ func (cmd *DeleteBuildpackCommand) Setup(config command.Config, ui command.UI) e
 }
 
 func (cmd DeleteBuildpackCommand) Execute(args []string) error {
-	cmd.Actor.DeleteBuildpack(cmd.RequiredArgs.Buildpack, cmd.Stack)
+	err := cmd.SharedActor.CheckTarget(false, false)
+	if err != nil {
+		return err
+	}
+
+	if cmd.Stack == "" {
+		cmd.UI.DisplayTextWithFlavor("Deleting buildpack {{.BuildpackName}}...", map[string]interface{}{
+			"BuildpackName": cmd.RequiredArgs.Buildpack,
+		})
+
+	} else {
+		cmd.UI.DisplayTextWithFlavor("Deleting buildpack {{.BuildpackName}} with stack {{.Stack}}...", map[string]interface{}{
+			"BuildpackName": cmd.RequiredArgs.Buildpack,
+			"Stack": cmd.Stack,
+		})
+	}
+	warnings, err := cmd.Actor.DeleteBuildpack(cmd.RequiredArgs.Buildpack, cmd.Stack)
+	cmd.UI.DisplayWarnings(warnings)
+	if err != nil {
+		return err
+	}
+	cmd.UI.DisplayOK()
 
 	return nil
 }
