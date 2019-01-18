@@ -1,13 +1,14 @@
 package v7_test
 
 import (
+	"errors"
+
 	"code.cloudfoundry.org/cli/actor/actionerror"
 	"code.cloudfoundry.org/cli/actor/v7action"
 	"code.cloudfoundry.org/cli/command/commandfakes"
 	. "code.cloudfoundry.org/cli/command/v7"
 	"code.cloudfoundry.org/cli/command/v7/v7fakes"
 	"code.cloudfoundry.org/cli/util/ui"
-	"errors"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -21,11 +22,10 @@ var _ = FDescribe("delete-buildpack Command", func() {
 		fakeConfig      *commandfakes.FakeConfig
 		fakeSharedActor *commandfakes.FakeSharedActor
 		fakeActor       *v7fakes.FakeDeleteBuildpackActor
-		//input           *Buffer
-		binaryName string
+		input           *Buffer
+		binaryName    string
 		buildpackName string
-		executeErr error
-		//app             string
+		executeErr    error
 	)
 
 	BeforeEach(func() {
@@ -98,7 +98,6 @@ var _ = FDescribe("delete-buildpack Command", func() {
 				})
 			})
 		})
-
 
 		When("--force is not specified", func() {
 			BeforeEach(func() {

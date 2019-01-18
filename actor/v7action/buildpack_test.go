@@ -1,6 +1,7 @@
 package v7action_test
 
 import (
+	"code.cloudfoundry.org/cli/actor/actionerror"
 	"errors"
 
 	. "code.cloudfoundry.org/cli/actor/v7action"
@@ -18,54 +19,6 @@ var _ = Describe("Buildpack", func() {
 
 	BeforeEach(func() {
 		actor, fakeCloudControllerClient, _, _, _ = NewTestActor()
-	})
-
-	Describe("DeleteBuildpack", func() {
-		var (
-			jobURL        JobURL
-			buildpackGUID string
-			warnings      Warnings
-			executeErr    error
-		)
-
-		JustBeforeEach(func() {
-			jobURL, warnings, executeErr = actor.DeleteBuildpack(buildpackGUID)
-		})
-
-		When("deleting a buildpack fails", func() {
-			BeforeEach(func() {
-				fakeCloudControllerClient.DeleteBuildpackReturns(
-					"",
-					ccv3.Warnings{"some-warning-1", "some-warning-2"},
-					errors.New("some-error"))
-			})
-
-			It("returns warnings and error", func() {
-				Expect(executeErr).To(MatchError("some-error"))
-				Expect(warnings).To(ConsistOf("some-warning-1", "some-warning-2"))
-				Expect(fakeCloudControllerClient.DeleteBuildpackCallCount()).To(Equal(1))
-				paramGUID := fakeCloudControllerClient.DeleteBuildpackArgsForCall(0)
-				Expect(paramGUID).To(Equal(buildpackGUID))
-			})
-		})
-
-		When("deleting the buildpack is successful", func() {
-			BeforeEach(func() {
-				fakeCloudControllerClient.DeleteBuildpackReturns(
-					JobURL("some-job-url"),
-					ccv3.Warnings{"some-warning-1", "some-warning-2"},
-					nil)
-			})
-
-			It("returns the jobURL and warnings", func() {
-				Expect(executeErr).ToNot(HaveOccurred())
-				Expect(warnings).To(ConsistOf("some-warning-1", "some-warning-2"))
-				Expect(jobURL).To(Equal(JobURL("some-job-url")))
-				Expect(fakeCloudControllerClient.DeleteBuildpackCallCount()).To(Equal(1))
-				paramGUID := fakeCloudControllerClient.DeleteBuildpackArgsForCall(0)
-				Expect(paramGUID).To(Equal(buildpackGUID))
-			})
-		})
 	})
 
 	Describe("GetBuildpackByNameAndStack", func() {
@@ -107,6 +60,42 @@ var _ = Describe("Buildpack", func() {
 					},
 				))
 			})
+		})
+
+		When("multiple buildpacks are returned", func() {
+			BeforeEach(func() {
+				ccBuildpacks := []ccv3.Buildpack{
+					{Name: "buildpack-1", Position: 1},
+					{Name: "buildpack-2", Position: 2},
+				}
+
+				fakeCloudControllerClient.GetBuildpacksReturns(
+					ccBuildpacks,
+					ccv3.Warnings{"some-warning-1", "some-warning-2"},
+					nil)
+			})
+			It("returns warnings and MultipleBuildpacksFoundError", func(){
+				Expect(executeErr).To(MatchError(actionerror.MultipleBuildpacksFoundError{}))
+				Expect(warnings).To(ConsistOf("some-warning-1", "some-warning-2"))
+			})
+
+		})
+
+		When("zero buildpacks are returned", func() {
+			BeforeEach(func() {
+				var ccBuildpacks []ccv3.Buildpack
+
+				fakeCloudControllerClient.GetBuildpacksReturns(
+					ccBuildpacks,
+					ccv3.Warnings{"some-warning-1", "some-warning-2"},
+					nil)
+			})
+			It("returns warnings and ", func(){
+				Expect(executeErr).To(MatchError(actionerror.BuildpackNotFoundError{}))
+				Expect(warnings).To(ConsistOf("some-warning-1", "some-warning-2"))
+			})
+
+
 		})
 
 		When("getting buildpacks is successful", func() {
@@ -231,4 +220,109 @@ var _ = Describe("Buildpack", func() {
 		})
 	})
 
+	Describe("DeleteBuildpackByNameAndStack", func() {
+		var (
+			buildpackName  = "buildpack-name"
+			buildpackStack = "buildpack-stack"
+			buildpackGUID  = "buildpack-guid"
+			jobURL         = "buildpack-delete-job-url"
+			warnings       Warnings
+			executeErr     error
+		)
+
+		JustBeforeEach(func() {
+			warnings, executeErr = actor.DeleteBuildpackByNameAndStack(buildpackName, buildpackStack)
+		})
+
+		When("getting the buildpack fails", func() {
+			BeforeEach(func() {
+				fakeCloudControllerClient.GetBuildpacksReturns(
+					[]ccv3.Buildpack{},
+					ccv3.Warnings{"some-warning-1", "some-warning-2"},
+					errors.New("api-get-error"))
+			})
+			It("returns warnings and error", func() {
+				Expect(executeErr).To(MatchError("api-get-error"))
+				Expect(warnings).To(ConsistOf("some-warning-1", "some-warning-2"))
+				Expect(fakeCloudControllerClient.GetBuildpacksCallCount()).To(Equal(1))
+				queries := fakeCloudControllerClient.GetBuildpacksArgsForCall(0)
+				Expect(queries).To(ConsistOf(
+					ccv3.Query{
+						Key:    ccv3.NameFilter,
+						Values: []string{buildpackName},
+					},
+					ccv3.Query{
+						Key:    ccv3.StackFilter,
+						Values: []string{buildpackStack},
+					},
+				))
+			})
+		})
+
+		When("getting the buildpack succeeds", func() {
+			BeforeEach(func() {
+				fakeCloudControllerClient.GetBuildpacksReturns(
+					[]ccv3.Buildpack{{GUID: buildpackGUID, Name: buildpackName, Stack: buildpackStack}},
+					ccv3.Warnings{"some-warning-1", "some-warning-2"},
+					nil)
+			})
+			When("deleting a buildpack fails", func() {
+				BeforeEach(func() {
+					fakeCloudControllerClient.DeleteBuildpackReturns(
+						"",
+						ccv3.Warnings{"some-warning-3", "some-warning-4"},
+						errors.New("api-delete-error"))
+				})
+
+				It("returns warnings and error", func() {
+					Expect(executeErr).To(MatchError("api-delete-error"))
+					Expect(warnings).To(ConsistOf("some-warning-1", "some-warning-2", "some-warning-3", "some-warning-4"))
+					Expect(fakeCloudControllerClient.DeleteBuildpackCallCount()).To(Equal(1))
+					paramGUID := fakeCloudControllerClient.DeleteBuildpackArgsForCall(0)
+					Expect(paramGUID).To(Equal(buildpackGUID))
+				})
+			})
+
+			When("deleting the buildpack is successful", func() {
+				BeforeEach(func() {
+					fakeCloudControllerClient.DeleteBuildpackReturns(
+						JobURL(jobURL),
+						ccv3.Warnings{"some-warning-3", "some-warning-4"},
+						nil)
+				})
+
+				When("polling the job fails", func() {
+					BeforeEach(func() {
+						fakeCloudControllerClient.PollJobReturns(
+							ccv3.Warnings{"some-warning-5", "some-warning-6"},
+							errors.New("api-poll-job-error"))
+					})
+					It("returns warnings and an error", func() {
+						Expect(executeErr).To(MatchError("api-poll-job-error"))
+						Expect(warnings).To(ConsistOf("some-warning-1", "some-warning-2", "some-warning-3", "some-warning-4", "some-warning-5", "some-warning-6"))
+						Expect(fakeCloudControllerClient.PollJobCallCount()).To(Equal(1))
+						paramURL := fakeCloudControllerClient.PollJobArgsForCall(0)
+						Expect(paramURL).To(Equal(ccv3.JobURL(jobURL)))
+					})
+				})
+
+				When("polling the job succeeds", func() {
+					BeforeEach(func() {
+						fakeCloudControllerClient.PollJobReturns(
+							ccv3.Warnings{"some-warning-5", "some-warning-6"},
+							nil)
+					})
+					It("returns all warnings and no error", func() {
+						Expect(executeErr).ToNot(HaveOccurred())
+						Expect(warnings).To(ConsistOf("some-warning-1", "some-warning-2", "some-warning-3", "some-warning-4", "some-warning-5", "some-warning-6"))
+						Expect(fakeCloudControllerClient.PollJobCallCount()).To(Equal(1))
+						paramURL := fakeCloudControllerClient.PollJobArgsForCall(0)
+						Expect(paramURL).To(Equal(ccv3.JobURL(jobURL)))
+
+					})
+				})
+			})
+		})
+
+	})
 })

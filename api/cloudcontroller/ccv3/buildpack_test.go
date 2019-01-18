@@ -177,7 +177,7 @@ var _ = Describe("Buildpacks", func() {
 		})
 	})
 
-	FDescribe("DeleteBuildpacks", func() {
+	Describe("DeleteBuildpacks", func() {
 		var (
 			buildpackGUID string
 			jobURL        JobURL
@@ -201,7 +201,7 @@ var _ = Describe("Buildpacks", func() {
 				)
 			})
 
-			It("returns the queried buildpacks and all warnings", func() {
+			It("returns the delete job URL and all warnings", func() {
 				Expect(executeErr).NotTo(HaveOccurred())
 
 				Expect(jobURL).To(Equal(JobURL("some-job-url")))
