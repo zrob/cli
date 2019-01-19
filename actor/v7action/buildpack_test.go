@@ -74,7 +74,7 @@ var _ = Describe("Buildpack", func() {
 					ccv3.Warnings{"some-warning-1", "some-warning-2"},
 					nil)
 			})
-			It("returns warnings and MultipleBuildpacksFoundError", func(){
+			It("returns warnings and MultipleBuildpacksFoundError", func() {
 				Expect(executeErr).To(MatchError(actionerror.MultipleBuildpacksFoundError{}))
 				Expect(warnings).To(ConsistOf("some-warning-1", "some-warning-2"))
 			})
@@ -90,11 +90,10 @@ var _ = Describe("Buildpack", func() {
 					ccv3.Warnings{"some-warning-1", "some-warning-2"},
 					nil)
 			})
-			It("returns warnings and ", func(){
+			It("returns warnings and ", func() {
 				Expect(executeErr).To(MatchError(actionerror.BuildpackNotFoundError{}))
 				Expect(warnings).To(ConsistOf("some-warning-1", "some-warning-2"))
 			})
-
 
 		})
 

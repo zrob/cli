@@ -23,16 +23,17 @@ var _ = FDescribe("delete-buildpack Command", func() {
 		fakeSharedActor *commandfakes.FakeSharedActor
 		fakeActor       *v7fakes.FakeDeleteBuildpackActor
 		input           *Buffer
-		binaryName    string
-		buildpackName string
-		executeErr    error
+		binaryName      string
+		buildpackName   string
+		executeErr      error
 	)
 
 	BeforeEach(func() {
+		input = NewBuffer()
 		fakeActor = new(v7fakes.FakeDeleteBuildpackActor)
 		fakeConfig = new(commandfakes.FakeConfig)
 		fakeSharedActor = new(commandfakes.FakeSharedActor)
-		testUI = ui.NewTestUI(nil, NewBuffer(), NewBuffer())
+		testUI = ui.NewTestUI(input, NewBuffer(), NewBuffer())
 
 		cmd = DeleteBuildpackCommand{
 			Actor:       fakeActor,
@@ -44,6 +45,7 @@ var _ = FDescribe("delete-buildpack Command", func() {
 		buildpackName = "the-buildpack"
 		fakeConfig.BinaryNameReturns(binaryName)
 		cmd.RequiredArgs.Buildpack = buildpackName
+		cmd.Force = true
 	})
 
 	When("checking target fails", func() {
@@ -65,7 +67,7 @@ var _ = FDescribe("delete-buildpack Command", func() {
 
 	When("the DeleteBuildpack actor completes successfully", func() {
 		BeforeEach(func() {
-			fakeActor.DeleteBuildpackReturns(nil, nil)
+			fakeActor.DeleteBuildpackByNameAndStackReturns(nil, nil)
 		})
 		JustBeforeEach(func() {
 			executeErr = cmd.Execute(nil)
@@ -111,27 +113,53 @@ var _ = FDescribe("delete-buildpack Command", func() {
 				})
 
 				It("prompted the user for confirmation", func() {
-					Expect(testUI.Out).To(Say("Deleting buildpack the-buildpack with stack a-stack..."))
+					Expect(testUI.Out).To(Say("Really delete the buildpack the-buildpack?"))
+					Expect(testUI.Out).To(Say("Deleting buildpack the-buildpack..."))
+					Expect(testUI.Out).To(Say("OK"))
+				})
+			})
+
+			When("the user inputs no", func() {
+				BeforeEach(func() {
+					_, err := input.Write([]byte("n\n"))
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				It("cancels the delete", func() {
+					Expect(testUI.Out).To(Say("Really delete the buildpack the-buildpack?"))
+					Expect(testUI.Out).To(Say("Delete cancelled"))
+					Expect(testUI.Out).NotTo(Say("Deleting buildpack the-buildpack..."))
 				})
 			})
 		})
 	})
 
+	When("the buildpack does not exist", func () {
+		BeforeEach(func() {
+			fakeActor.DeleteBuildpackByNameAndStackReturns(v7action.Warnings{"a-warning"}, actionerror.BuildpackNotFoundError{})
+			executeErr = cmd.Execute(nil)
+		})
+
+		It("prints warnings and helpful error message", func() {
+
+		})
+	})
+
 	It("delegates to the actor", func() {
 		cmd.Stack = "the-stack"
-		fakeActor.DeleteBuildpackReturns(nil, nil)
+		fakeActor.DeleteBuildpackByNameAndStackReturns(nil, nil)
 
 		executeErr = cmd.Execute(nil)
 
 		Expect(executeErr).ToNot(HaveOccurred())
-		actualBuildpack, actualStack := fakeActor.DeleteBuildpackArgsForCall(0)
+		actualBuildpack, actualStack := fakeActor.DeleteBuildpackByNameAndStackArgsForCall(0)
 		Expect(actualBuildpack).To(Equal("the-buildpack"))
 		Expect(actualStack).To(Equal("the-stack"))
 	})
 
 	It("prints warnings", func() {
 		cmd.Stack = "a-stack"
-		fakeActor.DeleteBuildpackReturns(v7action.Warnings{"a-warning"}, nil)
+		fakeActor.DeleteBuildpackByNameAndStackReturns(v7action.Warnings{"a-warning"}, nil)
 
 		executeErr = cmd.Execute(nil)
 
@@ -142,7 +170,7 @@ var _ = FDescribe("delete-buildpack Command", func() {
 	It("returns error from the actor and prints the errors", func() {
 		cmd.Stack = "a-stack"
 
-		fakeActor.DeleteBuildpackReturns(v7action.Warnings{"a-warning"}, errors.New("some-error"))
+		fakeActor.DeleteBuildpackByNameAndStackReturns(v7action.Warnings{"a-warning"}, errors.New("some-error"))
 
 		executeErr = cmd.Execute(nil)
 

@@ -51,7 +51,6 @@ func (actor Actor) GetBuildpackByNameAndStack(buildpackName string, buildpackSta
 		return Buildpack{}, Warnings(warnings), err
 	}
 
-
 	if len(ccv3Buildpacks) == 0 {
 		return Buildpack{}, Warnings(warnings), actionerror.BuildpackNotFoundError{}
 	}
@@ -66,19 +65,19 @@ func (actor Actor) GetBuildpackByNameAndStack(buildpackName string, buildpackSta
 func (actor Actor) DeleteBuildpackByNameAndStack(buildpackName string, buildpackStack string) (Warnings, error) {
 	var allWarnings Warnings
 	buildpack, getBuildpackWarnings, err := actor.GetBuildpackByNameAndStack(buildpackName, buildpackStack)
-	allWarnings = append(allWarnings, getBuildpackWarnings ...)
+	allWarnings = append(allWarnings, getBuildpackWarnings...)
 	if err != nil {
 		return allWarnings, err
 	}
 
 	jobURL, deleteBuildpackWarnings, err := actor.CloudControllerClient.DeleteBuildpack(buildpack.GUID)
-	allWarnings = append(allWarnings, deleteBuildpackWarnings ...)
+	allWarnings = append(allWarnings, deleteBuildpackWarnings...)
 	if err != nil {
 		return allWarnings, err
 	}
 
-	pollWarnings, err := actor.CloudControllerClient.PollJob(ccv3.JobURL(jobURL))
-	allWarnings = append(allWarnings, pollWarnings ...)
+	pollWarnings, err := actor.CloudControllerClient.PollJob(jobURL)
+	allWarnings = append(allWarnings, pollWarnings...)
 
 	return Warnings(allWarnings), err
 }

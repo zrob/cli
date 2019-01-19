@@ -32,8 +32,21 @@ func (cmd DeleteBuildpackCommand) Execute(args []string) error {
 		return err
 	}
 
-	// Prompt user
-	// Handle multiple buildpacks with same name (different stacks) error
+	if !cmd.Force {
+		response, err := cmd.UI.DisplayBoolPrompt(false, "Really delete the {{.ModelType}} {{.ModelName}}?", map[string]interface{}{
+			"ModelType": "buildpack",
+			"ModelName": cmd.RequiredArgs.Buildpack,
+		})
+		if err != nil {
+			return err
+		}
+
+		if !response {
+			cmd.UI.DisplayText("Delete cancelled")
+			return nil
+		}
+	}
+
 	if cmd.Stack == "" {
 		cmd.UI.DisplayTextWithFlavor("Deleting buildpack {{.BuildpackName}}...", map[string]interface{}{
 			"BuildpackName": cmd.RequiredArgs.Buildpack,
@@ -47,6 +60,12 @@ func (cmd DeleteBuildpackCommand) Execute(args []string) error {
 	}
 	warnings, err := cmd.Actor.DeleteBuildpackByNameAndStack(cmd.RequiredArgs.Buildpack, cmd.Stack)
 	cmd.UI.DisplayWarnings(warnings)
+
+	//Fetch:
+	// actionerror.BuildpackNotFoundError{}
+	// actionerror.MultipleBuildpacksFoundError{}
+
+
 	if err != nil {
 		return err
 	}
