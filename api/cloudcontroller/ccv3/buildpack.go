@@ -1,7 +1,6 @@
 package ccv3
 
 import (
-	"code.cloudfoundry.org/cli/api/cloudcontroller"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccerror"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/internal"
 )
@@ -28,23 +27,71 @@ type Buildpack struct {
 	State string
 }
 
-// Delete a buildpack by guid
-func (client Client) DeleteBuildpack(buildpackGUID string) (JobURL, Warnings, error) {
+func (client *Client) DeleteBuildpack(buildpackGUID string) (JobURL, Warnings, error) {
 	request, err := client.newHTTPRequest(requestOptions{
 		RequestName: internal.DeleteBuildpackRequest,
-		URIParams: map[string]string{
-			"buildpack_guid": buildpackGUID,
-		},
 	})
-	if err != nil {
-		return "", nil, err
-	}
+	client.connection.Make(request, &response)
 
-	response := cloudcontroller.Response{}
-	err = client.connection.Make(request, &response)
-
-	return JobURL(response.ResourceLocationURL), response.Warnings, err
+	return JobURL(""), nil, nil
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Delete a buildpack by guid
+//func (client Client) DeleteBuildpack(buildpackGUID string) (JobURL, Warnings, error) {
+//	request, err := client.newHTTPRequest(requestOptions{
+//		RequestName: internal.DeleteBuildpackRequest,
+//		URIParams: map[string]string{
+//			"buildpack_guid": buildpackGUID,
+//		},
+//	})
+//	if err != nil {
+//		return "", nil, err
+//	}
+//
+//	response := cloudcontroller.Response{}
+//	err = client.connection.Make(request, &response)
+//
+//	return JobURL(response.ResourceLocationURL), response.Warnings, err
+//}
 
 // GetBuildpacks lists buildpacks with optional filters.
 func (client *Client) GetBuildpacks(query ...Query) ([]Buildpack, Warnings, error) {
