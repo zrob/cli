@@ -17,7 +17,7 @@ import (
 	. "github.com/onsi/gomega/ghttp"
 )
 
-var _ = FDescribe("update-buildpack command", func() {
+var _ = Describe("update-buildpack command", func() {
 	var (
 		buildpackName string
 		username      string
