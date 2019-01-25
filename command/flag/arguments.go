@@ -228,6 +228,10 @@ type CreateBuildpackArgs struct {
 	Position  int                         `positional-arg-name:"POSITION" required:"true" description:"The position that sets priority"`
 }
 
+type UpdateBuildpackArgs struct {
+	Buildpack string                      `positional-arg-name:"BUILDPACK" required:"true" description:"The buildpack"`
+}
+
 type RenameBuildpackArgs struct {
 	OldBuildpackName string `positional-arg-name:"BUILDPACK_NAME" required:"true" description:"The old buildpack name"`
 	NewBuildpackName string `positional-arg-name:"NEW_BUILDPACK_NAME" required:"true" description:"The new buildpack name"`

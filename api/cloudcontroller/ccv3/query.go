@@ -22,6 +22,8 @@ const (
 	// SpaceGUIDFilter is a query parameter for listing objects by Space GUID.
 	SpaceGUIDFilter QueryKey = "space_guids"
 
+	StackFilter QueryKey = "stacks"
+
 	// OrderBy is a query parameter to specify how to order objects.
 	OrderBy QueryKey = "order_by"
 	// PerPage is a query parameter for specifying the number of results per page.
