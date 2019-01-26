@@ -335,8 +335,24 @@ var _ = Describe("UpdateBuildpackCommand", func() {
 						Expect(testUI.Out).To(Say("OK"))
 					})
 				})
+
 			})
 
+			When("the --rename flag is provided", func() {
+
+				BeforeEach(func() {
+					cmd.Rename = "new-buildpack-name"
+				})
+
+				It("sets the new name on the buildpack", func() {
+					Expect(executeErr).ToNot(HaveOccurred())
+					_, _, buildpack := fakeActor.UpdateBuildpackByNameAndStackArgsForCall(0)
+					Expect(buildpack.Name).To(Equal("new-buildpack-name"))
+
+					Expect(testUI.Out).ToNot(Say("Updating buildpack %s", buildpackName))
+					Expect(testUI.Out).To(Say("Renaming buildpack %s to %s as %s...", buildpackName, cmd.Rename, userName))
+				})
+			})
 			When("updating the buildpack succeeds", func() {
 				BeforeEach(func() {
 					fakeActor.UpdateBuildpackByNameAndStackReturns(

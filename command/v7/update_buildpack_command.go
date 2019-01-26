@@ -37,6 +37,7 @@ type UpdateBuildpackCommand struct {
 	Position        types.NullInt                    `long:"position" short:"i" description:"The order in which the buildpacks are checked during buildpack auto-detection"`
 	CurrentStack    string                           `long:"stack" short:"s" description:"Specify stack to disambiguate buildpacks with the same name"`
 	Unlock          bool                             `long:"unlock" description:"Unlock the buildpack to enable updates"`
+	Rename          string                           `long:"rename" description: Rename the buildpack"`
 
 	UI          command.UI
 	Config      command.Config
@@ -129,6 +130,10 @@ func (cmd UpdateBuildpackCommand) updateBuildpack() (v7action.Buildpack, error) 
 		desiredBuildpack.Stack = cmd.NewStack
 	}
 
+	if cmd.Rename != "" {
+		desiredBuildpack.Name = cmd.Rename
+	}
+
 	updatedBuildpack, warnings, err := cmd.Actor.UpdateBuildpackByNameAndStack(
 		cmd.RequiredArgs.Buildpack,
 		cmd.CurrentStack,
@@ -188,6 +193,12 @@ func (cmd UpdateBuildpackCommand) printInitialText(userName string) {
 				"Stack":       cmd.NewStack,
 			})
 		}
+	} else if cmd.Rename != "" {
+		cmd.UI.DisplayTextWithFlavor("Renaming buildpack {{.Buildpack}} to {{.DesiredBuildpackName}} as {{.CurrentUser}}...", map[string]interface{}{
+			"Buildpack":            cmd.RequiredArgs.Buildpack,
+			"CurrentUser":          userName,
+			"DesiredBuildpackName": cmd.Rename,
+		})
 	} else if cmd.CurrentStack == "" {
 		cmd.UI.DisplayTextWithFlavor("Updating buildpack {{.Buildpack}} as {{.CurrentUser}}...", map[string]interface{}{
 			"Buildpack":   cmd.RequiredArgs.Buildpack,
