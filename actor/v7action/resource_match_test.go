@@ -5,7 +5,9 @@ import (
 	. "code.cloudfoundry.org/cli/actor/v7action"
 	"code.cloudfoundry.org/cli/actor/v7action/v7actionfakes"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
+	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
 	"code.cloudfoundry.org/cli/cf/errors"
+	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -37,36 +39,45 @@ var _ = Describe("Resource Matching", func() {
 
 	When("The cc client succeeds", func() {
 		BeforeEach(func() {
-			resources = []sharedaction.V3Resource{
-				{FilePath: "path/to/file"},
-				{FilePath: "path/to/file2"},
+			for i := 1; i <= constant.MaxNumberOfResourcesForMatching+1; i++ {
+				resources = append(resources, sharedaction.V3Resource{
+					FilePath: fmt.Sprintf("path/to/file/%d", i),
+				})
 			}
 
-			fakeCloudControllerClient.ResourceMatchReturns([]ccv3.Resource{{FilePath: "path/to/file"}}, ccv3.Warnings{"this-is-a-warning"}, nil)
-		})
-		It("passes through the list of resources", func() {
-			Expect(fakeCloudControllerClient.ResourceMatchCallCount()).To(Equal(1))
-			Expect(executeErr).ToNot(HaveOccurred())
-			Expect(warnings).To(ConsistOf(ccv3.Warnings{"this-is-a-warning"}))
-			passedResources := fakeCloudControllerClient.ResourceMatchArgsForCall(0)
-			Expect(passedResources).To(ConsistOf(
-				ccv3.Resource{FilePath: "path/to/file"},
-				ccv3.Resource{FilePath: "path/to/file2"},
-			))
+			fakeCloudControllerClient.ResourceMatchReturnsOnCall(0, []ccv3.Resource{{FilePath: "path/to/file"}}, ccv3.Warnings{"this-is-a-warning"}, nil)
+			fakeCloudControllerClient.ResourceMatchReturnsOnCall(1, []ccv3.Resource{{FilePath: "path/to/other-file"}}, ccv3.Warnings{"this-is-another-warning"}, nil)
 		})
 
-		It("returns a list of sharedAction V3Resources", func() {
-			Expect(matchedResources).To(ConsistOf(sharedaction.V3Resource{FilePath: "path/to/file"}))
+		It("passes through the list of resources", func() {
+			Expect(fakeCloudControllerClient.ResourceMatchCallCount()).To(Equal(2))
+
+			passedResources := fakeCloudControllerClient.ResourceMatchArgsForCall(0)
+			Expect(passedResources).To(HaveLen(constant.MaxNumberOfResourcesForMatching))
+			Expect(passedResources[0].FilePath).To(MatchRegexp("path/to/file/\\d+"))
+
+			passedResources = fakeCloudControllerClient.ResourceMatchArgsForCall(1)
+			Expect(passedResources).To(HaveLen(1))
+			Expect(passedResources[0].FilePath).To(MatchRegexp("path/to/file/\\d+"))
+		})
+
+		It("returns a list of sharedAction V3Resources and warnings", func() {
+			Expect(executeErr).ToNot(HaveOccurred())
+			Expect(warnings).To(ConsistOf("this-is-a-warning", "this-is-another-warning"))
+			Expect(matchedResources).To(ConsistOf(
+				sharedaction.V3Resource{FilePath: "path/to/file"},
+				sharedaction.V3Resource{FilePath: "path/to/other-file"}))
 		})
 	})
 
 	When("The cc client errors", func() {
 		BeforeEach(func() {
-			fakeCloudControllerClient.ResourceMatchReturns([]ccv3.Resource{}, ccv3.Warnings{"this-is-a-warning"}, errors.New("boom"))
+			resources = []sharedaction.V3Resource{{}}
+			fakeCloudControllerClient.ResourceMatchReturns(nil, ccv3.Warnings{"this-is-a-warning"}, errors.New("boom"))
 		})
 
 		It("raises the error", func() {
-			Expect(executeErr).To(MatchError(errors.New("boom")))
+			Expect(executeErr).To(MatchError("boom"))
 			Expect(warnings).To(ConsistOf(ccv3.Warnings{"this-is-a-warning"}))
 		})
 	})
