@@ -1,13 +1,14 @@
 package v7action_test
 
 import (
+	"fmt"
+
 	"code.cloudfoundry.org/cli/actor/sharedaction"
 	. "code.cloudfoundry.org/cli/actor/v7action"
 	"code.cloudfoundry.org/cli/actor/v7action/v7actionfakes"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
 	"code.cloudfoundry.org/cli/cf/errors"
-	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -18,8 +19,6 @@ var _ = Describe("Resource Matching", func() {
 		executeErr                error
 		fakeCloudControllerClient *v7actionfakes.FakeCloudControllerClient
 		actor                     *Actor
-		fakeSharedActor           *v7actionfakes.FakeSharedActor
-		fakeConfig                *v7actionfakes.FakeConfig
 
 		matchedResources []sharedaction.V3Resource
 
@@ -27,10 +26,8 @@ var _ = Describe("Resource Matching", func() {
 	)
 
 	BeforeEach(func() {
-		fakeCloudControllerClient = new(v7actionfakes.FakeCloudControllerClient)
-		fakeConfig = new(v7actionfakes.FakeConfig)
-		fakeSharedActor = new(v7actionfakes.FakeSharedActor)
-		actor = NewActor(fakeCloudControllerClient, fakeConfig, fakeSharedActor, nil)
+		actor, fakeCloudControllerClient, _, _, _ = NewTestActor()
+		resources = []sharedaction.V3Resource{}
 	})
 
 	JustBeforeEach(func() {
@@ -41,15 +38,20 @@ var _ = Describe("Resource Matching", func() {
 		BeforeEach(func() {
 			for i := 1; i <= constant.MaxNumberOfResourcesForMatching+1; i++ {
 				resources = append(resources, sharedaction.V3Resource{
-					FilePath: fmt.Sprintf("path/to/file/%d", i),
+					FilePath:    fmt.Sprintf("path/to/file/%d", i),
+					SizeInBytes: 1,
 				})
 			}
+			resources = append(resources, sharedaction.V3Resource{
+				FilePath:    "empty-file",
+				SizeInBytes: 0,
+			})
 
 			fakeCloudControllerClient.ResourceMatchReturnsOnCall(0, []ccv3.Resource{{FilePath: "path/to/file"}}, ccv3.Warnings{"this-is-a-warning"}, nil)
 			fakeCloudControllerClient.ResourceMatchReturnsOnCall(1, []ccv3.Resource{{FilePath: "path/to/other-file"}}, ccv3.Warnings{"this-is-another-warning"}, nil)
 		})
 
-		It("passes through the list of resources", func() {
+		It("passes through the list of resources with no 0 length resources", func() {
 			Expect(fakeCloudControllerClient.ResourceMatchCallCount()).To(Equal(2))
 
 			passedResources := fakeCloudControllerClient.ResourceMatchArgsForCall(0)
@@ -72,7 +74,7 @@ var _ = Describe("Resource Matching", func() {
 
 	When("The cc client errors", func() {
 		BeforeEach(func() {
-			resources = []sharedaction.V3Resource{{}}
+			resources = []sharedaction.V3Resource{{SizeInBytes: 1}}
 			fakeCloudControllerClient.ResourceMatchReturns(nil, ccv3.Warnings{"this-is-a-warning"}, errors.New("boom"))
 		})
 
