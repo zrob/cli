@@ -2,59 +2,40 @@ package v7pushaction
 
 import (
 	"code.cloudfoundry.org/cli/actor/actionerror"
-	"code.cloudfoundry.org/cli/actor/v7action"
 	log "github.com/sirupsen/logrus"
 )
 
-func (actor Actor) PrepareSpace(pushPlans []PushPlan, manifestParser ManifestParser) (<-chan []PushPlan, <-chan Event, <-chan Warnings, <-chan error) {
-	pushPlansStream := make(chan []PushPlan)
+func (actor Actor) PrepareSpace(pushPlans []PushPlan, manifestParser ManifestParser) <-chan Event {
 	eventStream := make(chan Event)
-	warningsStream := make(chan Warnings)
-	errorStream := make(chan error)
 
 	go func() {
 		log.Debug("starting space preparation go routine")
-		defer close(pushPlansStream)
 		defer close(eventStream)
-		defer close(warningsStream)
-		defer close(errorStream)
-
-		var warnings v7action.Warnings
-		var err error
-		var successEvent Event
 
 		if manifestParser.FullRawManifest() == nil {
-			_, warnings, err = actor.V7Actor.CreateApplicationInSpace(pushPlans[0].Application, pushPlans[0].SpaceGUID)
+			_, warnings, err := actor.V7Actor.CreateApplicationInSpace(pushPlans[0].Application, pushPlans[0].SpaceGUID)
 			if _, ok := err.(actionerror.ApplicationAlreadyExistsError); ok {
-				eventStream <- SkippingApplicationCreation
-				successEvent = ApplicationAlreadyExists
-				err = nil
+				eventStream <- NewEvent(SkippingApplicationCreation, nil, nil, pushPlans)
+				eventStream <- NewEvent(ApplicationAlreadyExists, warnings, nil, pushPlans)
 			} else {
-				eventStream <- CreatingApplication
-				successEvent = CreatedApplication
+				eventStream <- NewEvent(CreatingApplication, nil, nil, pushPlans)
+				eventStream <- NewEvent(CreatedApplication, warngings, err, pushPlans)
 			}
 		} else {
 			var manifest []byte
-			manifest, err = getManifest(pushPlans, manifestParser)
+			manifest, err := getManifest(pushPlans, manifestParser)
 			if err != nil {
-				errorStream <- err
+				eventStream <- NewEvent(Error, nil, err, pushPlans)
 				return
 			}
-			eventStream <- ApplyManifest
-			warnings, err = actor.V7Actor.SetSpaceManifest(pushPlans[0].SpaceGUID, manifest) // CAN WE HAVE AN EMPTY MANIFEST
-			successEvent = ApplyManifestComplete
+			eventStream <- NewEvent(ApplyManifest, nil, nil, pushPlans)
+			warnings, err := actor.V7Actor.SetSpaceManifest(pushPlans[0].SpaceGUID, manifest) // CAN WE HAVE AN EMPTY MANIFEST
+			eventStream <- NewEvent(ApplyManifestComplete, warnings, err, pushPlans)
 		}
 
-		warningsStream <- Warnings(warnings)
-		errorStream <- err
-		if err != nil {
-			return
-		}
-		pushPlansStream <- pushPlans
-		eventStream <- successEvent
 	}()
 
-	return pushPlansStream, eventStream, warningsStream, errorStream
+	return eventStream
 }
 
 func getManifest(plans []PushPlan, parser ManifestParser) ([]byte, error) {
