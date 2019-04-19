@@ -61,7 +61,7 @@ var _ = Describe("JSONConfig", func() {
 				user, err := config.CurrentUser()
 				Expect(err).ToNot(HaveOccurred())
 				Expect(user).To(Equal(User{
-					Name: "potato-face",
+					Name: "client-credentials-user-id",
 				}))
 			})
 		})
@@ -103,7 +103,7 @@ var _ = Describe("JSONConfig", func() {
 
 				username, err := config.CurrentUserName()
 				Expect(err).ToNot(HaveOccurred())
-				Expect(username).To(Equal("potato-face"))
+				Expect(username).To(Equal("client-credentials-user-id"))
 			})
 		})
 

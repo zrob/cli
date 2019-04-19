@@ -1,0 +1,21 @@
+---
+platform: linux
+
+image_resource:
+ type: docker-image
+ source:
+  repository: busybox
+
+  params:
+    BBL_STATE_DIR:
+    CLIENT_CREDENTIALS_USER_ID:
+    CLIENT_CREDENTIALS_USER_SECRET:
+
+run:
+  path: sh
+  args:
+  - -c
+  - |
+    set -e
+
+

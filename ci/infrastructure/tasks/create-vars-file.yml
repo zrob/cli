@@ -10,7 +10,8 @@ outputs:
 - name: vars_path
 
 params:
-  CLIENT_SECRET:
+  CLIENT_CREDENTIALS_USER_ID:
+  CLIENT_CREDENTIALS_USER_SECRET:
 
 run:
   path: sh
@@ -20,5 +21,6 @@ run:
     set -eux
 
     cat << EOF > vars_path/vars.yml
-    client-secret: $CLIENT_SECRET
+    client-credentials-user-id: $CLIENT_CREDENTIALS_USER_ID
+    client-credentials-user-secret: $CLIENT_CREDENTIALS_USER_SECRET
     EOF

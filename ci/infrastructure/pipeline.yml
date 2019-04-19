@@ -80,7 +80,8 @@ jobs:
   - task: create-vars-file
     file: cli-ci/ci/infrastructure/tasks/create-vars-file.yml
     params:
-      CLIENT_SECRET: ((client-secret))
+      CLIENT_CREDENTIALS_USER_ID: client-credentials-user-id
+      CLIENT_CREDENTIALS_USER_SECRET: ((client-secret))
   - task: copy-ops-files
     file: cli-ci/ci/infrastructure/tasks/combine-inputs.yml
     input_mapping:
@@ -99,6 +100,12 @@ jobs:
       OPS_FILES: "add-persistent-isolation-segment-diego-cell.yml use-compiled-releases.yml cli-isolation-cell-overrides.yml default-app-memory.yml skip-ssl-override.yml scale-to-one-az.yml diego-cell-instances.yml uaa-vm_type-override.yml add-uaa-client-credentials.yml add-dummy-windows-stack.yml reduce-async-service-polling.yml add-oidc-provider.yml adjust-user-retry-attempts.yml enable-v3-deployments-endpoint.yml give-cf-admin-clients-read-scope.yml"
       VARS_FILES: vars.yml
       BBL_STATE_DIR: ci/infrastructure/((stack-name))
+  - task: seed-credhub
+    file: cli-ci/ci/infrastructure/tasks/seed-credhub.yml
+    params:
+      BBL_STATE_DIR: ci/infrastructure/((stack-name))
+      CLIENT_CREDENTIALS_USER_ID: client-credentials-user-id
+      CLIENT_CREDENTIALS_USER_SECRET: ((client-secret))
   - task: bosh-cleanup
     file: cf-deployment-concourse-tasks/bosh-cleanup/task.yml
     input_mapping:

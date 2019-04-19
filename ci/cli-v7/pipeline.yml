@@ -331,7 +331,7 @@ jobs:
         task: cleanup-integration
         file: cli-ci/ci/cli-v7/tasks/cleanup-integration.yml
       params: &integration_params
-        CF_INT_CLIENT_ID: 'potato-face'
+        CF_INT_CLIENT_ID: 'client-credentials-user-id'
         CF_INT_CLIENT_SECRET: ((client-secret))
         CF_INT_DOCKER_IMAGE: ((dockerhub-private-image))
         CF_INT_DOCKER_USERNAME: ((dockerhub-username))
