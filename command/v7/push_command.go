@@ -89,6 +89,7 @@ type PushCommand struct {
 	StartCommand            flag.Command                  `long:"start-command" short:"c" description:"Startup command, set to null to reset to default start command"`
 	Vars                    []template.VarKV              `long:"var" description:"Variable key value pair for variable substitution, (e.g., name=app1); can specify multiple times"`
 	PathsToVarsFiles        []flag.PathWithExistenceCheck `long:"vars-file" description:"Path to a variable substitution file for manifest; can specify multiple times"`
+	Task                    bool                          `long:"task" description:"task push"`
 	dockerPassword          interface{}                   `environmentName:"CF_DOCKER_PASSWORD" environmentDescription:"Password used for private docker repository"`
 	usage                   interface{}                   `usage:"CF_NAME push APP_NAME [-b BUILDPACK_NAME] [-c COMMAND]\n   [-f MANIFEST_PATH | --no-manifest] [--no-start] [-i NUM_INSTANCES]\n   [-k DISK] [-m MEMORY] [-p PATH] [-s STACK] [-t HEALTH_TIMEOUT]\n   [-u (process | port | http)]   [--no-route | --random-route]\n   [--var KEY=VALUE] [--vars-file VARS_FILE_PATH]...\n \n  CF_NAME push APP_NAME --docker-image [REGISTRY_HOST:PORT/]IMAGE[:TAG] [--docker-username USERNAME]\n   [-c COMMAND] [-f MANIFEST_PATH | --no-manifest] [--no-start]\n   [-i NUM_INSTANCES] [-k DISK] [-m MEMORY] [-p PATH] [-s STACK] [-t HEALTH_TIMEOUT] [-u (process | port | http)]\n   [--no-route | --random-route ] [--var KEY=VALUE] [--vars-file VARS_FILE_PATH]..."`
 	envCFStagingTimeout     interface{}                   `environmentName:"CF_STAGING_TIMEOUT" environmentDescription:"Max wait time for buildpack staging, in minutes" environmentDefault:"15"`
@@ -261,7 +262,7 @@ func (cmd PushCommand) announcePushing(appNames []string, user configv3.User) {
 
 func (cmd PushCommand) appRestarter(appName, appGUID string) (bool, error) {
 	anyProcessCrashed := false
-	if !cmd.NoStart {
+	if !cmd.NoStart && !cmd.Task {
 		cmd.UI.DisplayNewline()
 		cmd.UI.DisplayTextWithFlavor(
 			"Waiting for app {{.AppName}} to start...",
@@ -548,11 +549,12 @@ func (cmd PushCommand) GetFlagOverrides() (v7pushaction.FlagOverrides, error) {
 		HealthCheckEndpoint: cmd.HealthCheckHTTPEndpoint,
 		HealthCheckType:     cmd.HealthCheckType.Type,
 		HealthCheckTimeout:  cmd.HealthCheckTimeout.Value, Instances: cmd.Instances.NullInt,
-		Memory:            cmd.Memory.NullUint64,
-		NoStart:           cmd.NoStart,
-		ProvidedAppPath:   string(cmd.AppPath),
-		SkipRouteCreation: cmd.NoRoute,
-		StartCommand:      cmd.StartCommand.FilteredString,
+		Memory:              cmd.Memory.NullUint64,
+		NoStart:             cmd.NoStart,
+		ProvidedAppPath:     string(cmd.AppPath),
+		SkipRouteCreation:   cmd.NoRoute,
+		StartCommand:        cmd.StartCommand.FilteredString,
+		Task:                cmd.Task,
 	}, nil
 }
 
