@@ -236,6 +236,25 @@ var _ = Describe("auth command", func() {
 				Expect(configFile.UAAGrantType).To(Equal("client_credentials"))
 			})
 		})
+
+		FWhen("user manually inputs clinet credentials in their config.json", func() {
+			BeforeEach(func() {
+				clientID, clientSecret := helpers.SkipIfClientCredentialsNotSet()
+
+				helpers.SetConfig(func(config *configv3.Config) {
+					config.ConfigFile.UAAOAuthClient = clientID
+					config.ConfigFile.UAAOAuthClientSecret = clientSecret
+					config.ConfigFile.UAAGrantType = "client_credentials"
+				})
+			})
+
+			It("shows a warning message", func() {
+				session := helpers.CF("auth", "--client-credentials")
+
+				Eventually(session).Should(Say("Deprecation warning: Manually writing your client credentials to the config.json is deprecated and will be removed in the future. For similar functionality, please use the `cf auth --client-credentials` command instead."))
+				Eventually(session).Should(Exit(0))
+			})
+		})
 	})
 
 	When("a user authenticates with valid client credentials", func() {
